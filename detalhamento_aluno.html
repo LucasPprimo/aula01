@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desempenho dos Alunos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
+
+    <main class="max-w-7xl mx-auto">
+        <!-- SEÇÃO: TABELA DETALHADA DE DESEMPENHO DOS ALUNOS -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table text-sky-400"></i> Tabela Detalhada de Desempenho dos Alunos
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Clique no botão "Detalhes" para verificar quais questões cada aluno acertou e errou por tópico.</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3.5 px-4">Aluno</th>
+                            <th class="py-3.5 px-3">Turma</th>
+                            <th class="py-3.5 px-3 text-center">Aproveitamento</th>
+                            <th class="py-3.5 px-3 text-center">Acertos / Erros</th>
+                            <th class="py-3.5 px-3 text-center">Tempo</th>
+                            <th class="py-3.5 px-2 text-center">HTML</th>
+                            <th class="py-3.5 px-2 text-center">Banco Dados</th>
+                            <th class="py-3.5 px-2 text-center">Lógica</th>
+                            <th class="py-3.5 px-2 text-center">Operadores</th>
+                            <th class="py-3.5 px-4 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Linhas geradas via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE DETALHAMENTO DAS QUESTÕES -->
+    <div id="studentModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative my-8 text-slate-200">
+            <!-- Modal Header -->
+            <div class="flex items-start justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div id="modalAvatar" class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center font-bold text-lg">
+                        --
+                    </div>
+                    <div>
+                        <h3 id="modalStudentName" class="text-base font-bold text-white">NOME DO ALUNO</h3>
+                        <p id="modalStudentMeta" class="text-xs text-slate-400">Turma: -- &bull; Tempo de Prova: --</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="mt-5 space-y-6">
+                <!-- Summary Stats Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Aproveitamento</span>
+                        <span id="modalScorePct" class="text-xl font-extrabold text-emerald-400">0%</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Acertos / Erros</span>
+                        <span id="modalScoreCounts" class="text-xl font-extrabold text-slate-200">0 / 0</span>
+                    </div>
+                    <div class="text-center col-span-2 sm:col-span-1">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Classificação na Turma</span>
+                        <span id="modalClassRank" class="text-xl font-extrabold text-sky-400">-</span>
+                    </div>
+                </div>
+
+                <!-- Detalhamento de Questões por Tópico -->
+                <div>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-sky-400"></i> Detalhamento de Questões Acertadas e Erradas por Tópico
+                    </h4>
+                    <div id="modalTopicCards" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Cards dinâmicos com acertos/erros de questões -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT & DATASET -->
+    <script>
+        const rawDataset = [
+            {"aluno": "JOÃO AUGUSTO CAVALCANTI DE MEDEIROS", "turma": "APT.082.010", "total": 25, "acertos": 19, "erros": 6, "percentual": 76.0, "tempo": "00:47:55", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797"]}, "CSS / Frontend": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_59559", "SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 4, "erros": 1, "pct": 80.0, "questoes_acertou": ["SAEP_59474", "SAEP_59481", "SAEP_59482", "SAEP_59490"], "questoes_errou": ["SAEP_59483"]}, "Lógica de Programação": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_67657", "SAEP_67659"], "questoes_errou": ["SAEP_59512", "SAEP_67658"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_65425", "SAEP_77638"], "questoes_errou": ["SAEP_59480"]}}},
+            {"aluno": "MAURICIO WENDEL RODRIGUES COUTO DA SILVA", "turma": "APT.082.010", "total": 25, "acertos": 18, "erros": 7, "percentual": 72.0, "tempo": "00:53:17", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 2, "erros": 3, "pct": 40.0, "questoes_acertou": ["SAEP_59481", "SAEP_59483"], "questoes_errou": ["SAEP_59474", "SAEP_59482", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67658"], "questoes_errou": ["SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 6, "erros": 0, "pct": 100.0, "questoes_acertou": ["SAEP_59480", "SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_65425", "SAEP_77638"], "questoes_errou": []}}},
+            {"aluno": "RAYSSA FERNANDA MONTEIRO DE FARIAS", "turma": "APT.082.010", "total": 25, "acertos": 17, "erros": 8, "percentual": 68.0, "tempo": "00:54:34", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797"]}, "CSS / Frontend": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_59559", "SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 4, "erros": 1, "pct": 80.0, "questoes_acertou": ["SAEP_59481", "SAEP_59482", "SAEP_59483", "SAEP_59490"], "questoes_errou": ["SAEP_59474"]}, "Lógica de Programação": {"total": 6, "acertos": 3, "erros": 3, "pct": 50.0, "questoes_acertou": ["SAEP_67657", "SAEP_67658", "SAEP_67659"], "questoes_errou": ["SAEP_51106", "SAEP_52843", "SAEP_59512"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_65417", "SAEP_65423", "SAEP_65425", "SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_59499"]}}},
+            {"aluno": "MARIA BEATRIZ DA SILVA", "turma": "APT.082.010", "total": 25, "acertos": 16, "erros": 9, "percentual": 64.0, "tempo": "00:40:54", "topicos": {"HTML": {"total": 4, "acertos": 4, "erros": 0, "pct": 100.0, "questoes_acertou": ["SAEP_45797", "SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": []}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 4, "erros": 1, "pct": 80.0, "questoes_acertou": ["SAEP_59481", "SAEP_59482", "SAEP_59483", "SAEP_59490"], "questoes_errou": ["SAEP_59474"]}, "Lógica de Programação": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67658"], "questoes_errou": ["SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 1, "erros": 5, "pct": 16.7, "questoes_acertou": ["SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_65425"]}}},
+            {"aluno": "CAIO PAES FEIJO", "turma": "APT.082.010", "total": 25, "acertos": 15, "erros": 10, "percentual": 60.0, "tempo": "00:26:40", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 1, "erros": 4, "pct": 20.0, "questoes_acertou": ["SAEP_59483"], "questoes_errou": ["SAEP_59474", "SAEP_59481", "SAEP_59482", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_67657", "SAEP_67658", "SAEP_67659"], "questoes_errou": ["SAEP_59512"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_65425"]}}},
+            {"aluno": "ARTHUR EMMANUEL SOARES PEREIRA", "turma": "APT.082.010", "total": 25, "acertos": 13, "erros": 12, "percentual": 52.0, "tempo": "01:23:09", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_45797", "SAEP_63235", "SAEP_64324"], "questoes_errou": ["SAEP_64151"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 3, "erros": 2, "pct": 60.0, "questoes_acertou": ["SAEP_59481", "SAEP_59483", "SAEP_59490"], "questoes_errou": ["SAEP_59474", "SAEP_59482"]}, "Lógica de Programação": {"total": 6, "acertos": 2, "erros": 4, "pct": 33.3, "questoes_acertou": ["SAEP_51106", "SAEP_67657"], "questoes_errou": ["SAEP_52843", "SAEP_59512", "SAEP_67658", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 3, "erros": 3, "pct": 50.0, "questoes_acertou": ["SAEP_65417", "SAEP_65423", "SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_59499", "SAEP_65425"]}}},
+            {"aluno": "MARIA EDUARDA MARQUES DO NASCIMENTO", "turma": "APT.082.010", "total": 25, "acertos": 13, "erros": 12, "percentual": 52.0, "tempo": "00:38:31", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_45797", "SAEP_63235", "SAEP_64151"], "questoes_errou": ["SAEP_64324"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_94677"], "questoes_errou": ["SAEP_59559", "SAEP_64375"]}, "Banco de Dados": {"total": 5, "acertos": 1, "erros": 4, "pct": 20.0, "questoes_acertou": ["SAEP_59474"], "questoes_errou": ["SAEP_59481", "SAEP_59482", "SAEP_59483", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 2, "erros": 4, "pct": 33.3, "questoes_acertou": ["SAEP_52843", "SAEP_59512"], "questoes_errou": ["SAEP_51106", "SAEP_67657", "SAEP_67658", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_59480", "SAEP_65417", "SAEP_65423", "SAEP_65425", "SAEP_77638"], "questoes_errou": ["SAEP_59499"]}}},
+            {"aluno": "ALLAN RAFAEL MARINHO DE OLIVEIRA", "turma": "APT.082.010", "total": 25, "acertos": 9, "erros": 16, "percentual": 36.0, "tempo": "01:08:36", "topicos": {"HTML": {"total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_64324"], "questoes_errou": ["SAEP_45797", "SAEP_63235", "SAEP_64151"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 1, "erros": 4, "pct": 20.0, "questoes_acertou": ["SAEP_59481"], "questoes_errou": ["SAEP_59474", "SAEP_59482", "SAEP_59483", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_52843", "SAEP_59512", "SAEP_67658", "SAEP_67659"], "questoes_errou": ["SAEP_51106", "SAEP_67657"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 1, "erros": 5, "pct": 16.7, "questoes_acertou": ["SAEP_65425"], "questoes_errou": ["SAEP_59480", "SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_77638"]}}},
+            {"aluno": "KAUÃ DE SOUZA RODRIGUES DE LIMA", "turma": "TEC.272.019", "total": 25, "acertos": 17, "erros": 8, "percentual": 68.0, "tempo": "00:41:16", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_45797", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_63235"]}, "CSS / Frontend": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375", "SAEP_94677"], "questoes_errou": ["SAEP_59559"]}, "Banco de Dados": {"total": 5, "acertos": 3, "erros": 2, "pct": 60.0, "questoes_acertou": ["SAEP_59481", "SAEP_59482", "SAEP_59483"], "questoes_errou": ["SAEP_59474", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_59512", "SAEP_67658", "SAEP_67659"], "questoes_errou": ["SAEP_67657"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 3, "erros": 3, "pct": 50.0, "questoes_acertou": ["SAEP_65423", "SAEP_65425", "SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_59499", "SAEP_65417"]}}},
+            {"aluno": "JOÃO VILAÇA MONTESCHIO", "turma": "TEC.272.019", "total": 25, "acertos": 16, "erros": 9, "percentual": 64.0, "tempo": "00:36:55", "topicos": {"HTML": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_63235", "SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797"]}, "CSS / Frontend": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_59559", "SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 2, "erros": 3, "pct": 40.0, "questoes_acertou": ["SAEP_59474", "SAEP_59482"], "questoes_errou": ["SAEP_59481", "SAEP_59483", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 5, "erros": 1, "pct": 83.3, "questoes_acertou": ["SAEP_51106", "SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67658"], "questoes_errou": ["SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 3, "erros": 3, "pct": 50.0, "questoes_acertou": ["SAEP_59499", "SAEP_65423", "SAEP_65425"], "questoes_errou": ["SAEP_59480", "SAEP_65417", "SAEP_77638"]}}},
+            {"aluno": "RAYANE VITORIA BELO DA SILVA", "turma": "TEC.272.019", "total": 25, "acertos": 13, "erros": 12, "percentual": 52.0, "tempo": "00:40:47", "topicos": {"HTML": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_63235", "SAEP_64324"], "questoes_errou": ["SAEP_45797", "SAEP_64151"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 3, "erros": 2, "pct": 60.0, "questoes_acertou": ["SAEP_59474", "SAEP_59482", "SAEP_59490"], "questoes_errou": ["SAEP_59481", "SAEP_59483"]}, "Lógica de Programação": {"total": 6, "acertos": 2, "erros": 4, "pct": 33.3, "questoes_acertou": ["SAEP_51106", "SAEP_67658"], "questoes_errou": ["SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_77638"], "questoes_errou": ["SAEP_59480", "SAEP_65425"]}}},
+            {"aluno": "MARIA CLARA CASTELO BRANCO CORREIA", "turma": "TEC.272.019", "total": 25, "acertos": 10, "erros": 15, "percentual": 40.0, "tempo": "00:41:08", "topicos": {"HTML": {"total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_64324"], "questoes_errou": ["SAEP_45797", "SAEP_63235", "SAEP_64151"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_59559", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 2, "erros": 3, "pct": 40.0, "questoes_acertou": ["SAEP_59474", "SAEP_59482"], "questoes_errou": ["SAEP_59481", "SAEP_59483", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 1, "erros": 5, "pct": 16.7, "questoes_acertou": ["SAEP_67658"], "questoes_errou": ["SAEP_51106", "SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 4, "erros": 2, "pct": 66.7, "questoes_acertou": ["SAEP_59499", "SAEP_65417", "SAEP_65423", "SAEP_65425"], "questoes_errou": ["SAEP_59480", "SAEP_77638"]}}},
+            {"aluno": "CAIO HANRY SILVA DE LIMA", "turma": "TEC.272.019", "total": 25, "acertos": 10, "erros": 15, "percentual": 40.0, "tempo": "00:38:09", "topicos": {"HTML": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_64151", "SAEP_64324"], "questoes_errou": ["SAEP_45797", "SAEP_63235"]}, "CSS / Frontend": {"total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_59559", "SAEP_64308", "SAEP_64375"], "questoes_errou": ["SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 0, "erros": 5, "pct": 0.0, "questoes_acertou": [], "questoes_errou": ["SAEP_59474", "SAEP_59481", "SAEP_59482", "SAEP_59483", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 2, "erros": 4, "pct": 33.3, "questoes_acertou": ["SAEP_59512", "SAEP_67658"], "questoes_errou": ["SAEP_51106", "SAEP_52843", "SAEP_67657", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 3, "erros": 3, "pct": 50.0, "questoes_acertou": ["SAEP_59499", "SAEP_65417", "SAEP_65425"], "questoes_errou": ["SAEP_59480", "SAEP_65423", "SAEP_77638"]}}},
+            {"aluno": "ERICK DOS SANTOS MENDES", "turma": "TEC.272.019", "total": 25, "acertos": 8, "erros": 17, "percentual": 32.0, "tempo": "00:55:20", "topicos": {"HTML": {"total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_64151"], "questoes_errou": ["SAEP_45797", "SAEP_63235", "SAEP_64324"]}, "CSS / Frontend": {"total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_59559", "SAEP_64375"], "questoes_errou": ["SAEP_64308", "SAEP_94677"]}, "Banco de Dados": {"total": 5, "acertos": 2, "erros": 3, "pct": 40.0, "questoes_acertou": ["SAEP_59482", "SAEP_59483"], "questoes_errou": ["SAEP_59474", "SAEP_59481", "SAEP_59490"]}, "Lógica de Programação": {"total": 6, "acertos": 1, "erros": 5, "pct": 16.7, "questoes_acertou": ["SAEP_51106"], "questoes_errou": ["SAEP_52843", "SAEP_59512", "SAEP_67657", "SAEP_67658", "SAEP_67659"]}, "Operadores & Algoritmos": {"total": 6, "acertos": 2, "erros": 4, "pct": 33.3, "questoes_acertou": ["SAEP_65417", "SAEP_65423"], "questoes_errou": ["SAEP_59480", "SAEP_59499", "SAEP_65425", "SAEP_77638"]}}}
+        ];
+
+        window.onload = function() {
+            renderTable();
+        };
+
+        function renderTable() {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = '';
+
+            rawDataset.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800/40";
+
+                let badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/30";
+                if (student.percentual >= 70.0) badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                else if (student.percentual >= 61.0) badgeClass = "bg-sky-500/10 text-sky-400 border-sky-500/30";
+
+                const getTopicPill = (pct) => {
+                    let color = "text-rose-400 bg-rose-500/10";
+                    if (pct >= 70) color = "text-emerald-400 bg-emerald-500/10";
+                    else if (pct >= 61) color = "text-sky-400 bg-sky-500/10";
+                    return `<span class="px-2 py-0.5 rounded text-[11px] font-semibold ${color}">${pct.toFixed(0)}%</span>`;
+                };
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-slate-100 text-xs">${student.aluno}</div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <span class="px-2 py-1 rounded-md text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                            ${student.turma}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${badgeClass}">
+                            ${student.percentual.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-center font-mono">
+                        <span class="text-emerald-400 font-bold">${student.acertos}</span> / <span class="text-rose-400 font-bold">${student.erros}</span>
+                    </td>
+                    <td class="py-3 px-3 text-center font-mono text-slate-400 text-[11px]">
+                        ${student.tempo}
+                    </td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['HTML'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Banco de Dados'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Lógica de Programação'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Operadores & Algoritmos'].pct)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="openModal('${student.aluno}')" class="px-3 py-1.5 bg-sky-600/20 hover:bg-sky-600 border border-sky-500/40 text-sky-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 mx-auto">
+                            <i class="fa-solid fa-eye text-[10px]"></i> Detalhes
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal(studentName) {
+            const student = rawDataset.find(s => s.aluno === studentName);
+            if (!student) return;
+
+            const initials = student.aluno.split(' ').map(n => n[0]).slice(0, 2).join('');
+            document.getElementById('modalAvatar').innerText = initials;
+            document.getElementById('modalStudentName').innerText = student.aluno;
+            document.getElementById('modalStudentMeta').innerText = `Turma: ${student.turma} • Tempo de Prova: ${student.tempo}`;
+
+            document.getElementById('modalScorePct').innerText = `${student.percentual.toFixed(1)}%`;
+            document.getElementById('modalScoreCounts').innerText = `${student.acertos} acertos / ${student.erros} erros`;
+
+            const classMembers = rawDataset.filter(s => s.turma === student.turma).sort((a, b) => b.percentual - a.percentual);
+            const rank = classMembers.findIndex(s => s.aluno === student.aluno) + 1;
+            document.getElementById('modalClassRank').innerText = `${rank}º lugar de ${classMembers.length}`;
+
+            const container = document.getElementById('modalTopicCards');
+            container.innerHTML = '';
+
+            Object.keys(student.topicos).forEach(topicName => {
+                const top = student.topicos[topicName];
+                
+                let pctColor = "text-rose-400";
+                if (top.pct >= 70) pctColor = "text-emerald-400";
+                else if (top.pct >= 61) pctColor = "text-sky-400";
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2";
+
+                const acertouBadges = top.questoes_acertou.length > 0 
+                    ? top.questoes_acertou.map(q => `<span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-semibold">${q} &#10004;</span>`).join(' ') 
+                    : `<span class="text-slate-500 italic text-[11px]">Nenhuma questão</span>`;
+
+                const errouBadges = top.questoes_errou.length > 0 
+                    ? top.questoes_errou.map(q => `<span class="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-mono text-[10px] font-semibold">${q} &#10008;</span>`).join(' ') 
+                    : `<span class="text-slate-500 italic text-[11px]">Nenhum erro</span>`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-200">${topicName}</span>
+                        <span class="text-xs font-extrabold ${pctColor}">${top.pct.toFixed(0)}%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="h-full ${top.pct >= 70 ? 'bg-emerald-500' : top.pct >= 61 ? 'bg-sky-500' : 'bg-rose-500'}" style="width: ${top.pct}%"></div>
+                    </div>
+                    <div class="pt-2 text-[11px] space-y-1">
+                        <div><strong class="text-slate-400 block text-[10px] uppercase">Questões Acertadas (${top.acertos}):</strong> ${acertouBadges}</div>
+                        <div class="mt-1"><strong class="text-slate-400 block text-[10px] uppercase">Questões Erradas (${top.erros}):</strong> ${errouBadges}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('studentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
