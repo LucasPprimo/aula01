@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desempenho dos Alunos - Simulado Noite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
+
+    <main class="max-w-7xl mx-auto">
+        <!-- SEÇÃO: TABELA DETALHADA DE DESEMPENHO DOS ALUNOS -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table text-sky-400"></i> Tabela Detalhada de Desempenho dos Alunos (Turmas TEC.206.029 e TEC.206.041)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Clique no botão "Detalhes" para verificar quais questões cada aluno acertou e errou por tópico.</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3.5 px-4">Aluno / Matrícula</th>
+                            <th class="py-3.5 px-3">Turma</th>
+                            <th class="py-3.5 px-3 text-center">Aproveitamento</th>
+                            <th class="py-3.5 px-3 text-center">Acertos / Erros</th>
+                            <th class="py-3.5 px-3 text-center">Tempo</th>
+                            <th class="py-3.5 px-2 text-center">Modelagem</th>
+                            <th class="py-3.5 px-2 text-center">Dev IoT</th>
+                            <th class="py-3.5 px-2 text-center">Lógica Prog.</th>
+                            <th class="py-3.5 px-2 text-center">Banco Dados</th>
+                            <th class="py-3.5 px-4 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Linhas geradas via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE DETALHAMENTO DAS QUESTÕES -->
+    <div id="studentModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative my-8 text-slate-200">
+            <!-- Modal Header -->
+            <div class="flex items-start justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div id="modalAvatar" class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center font-bold text-lg">
+                        --
+                    </div>
+                    <div>
+                        <h3 id="modalStudentName" class="text-base font-bold text-white">NOME DO ALUNO</h3>
+                        <p id="modalStudentMeta" class="text-xs text-slate-400">Turma: -- &bull; Matrícula: -- &bull; Tempo: --</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="mt-5 space-y-6">
+                <!-- Summary Stats Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Aproveitamento</span>
+                        <span id="modalScorePct" class="text-xl font-extrabold text-emerald-400">0%</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Acertos / Erros</span>
+                        <span id="modalScoreCounts" class="text-xl font-extrabold text-slate-200">0 / 0</span>
+                    </div>
+                    <div class="text-center col-span-2 sm:col-span-1">
+                        <span class="block text-[10px] uppercase tracking-wider text-slate-400">Classificação na Turma</span>
+                        <span id="modalClassRank" class="text-xl font-extrabold text-sky-400">-</span>
+                    </div>
+                </div>
+
+                <!-- Detalhamento de Questões por Tópico -->
+                <div>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-sky-400"></i> Detalhamento de Questões Acertadas e Erradas por Tópico
+                    </h4>
+                    <div id="modalTopicCards" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Cards dinâmicos com acertos/erros de questões -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT & DATASET -->
+    <script>
+        const rawDataset = [
+            {
+                "aluno": "JOÃO VICTOR BRITO LOPES",
+                "matricula": "287980",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 35,
+                "erros": 5,
+                "percentual": 87.5,
+                "tempo": "00:21:00",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 8, "erros": 1, "pct": 88.9, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160"], "questoes_errou": ["SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 11, "erros": 2, "pct": 84.6, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48710", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718"], "questoes_errou": ["SAEP_47534", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 13, "erros": 1, "pct": 92.9, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"], "questoes_errou": ["SAEP_51353"] },
+                    "Banco de Dados": { "total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342", "SAEP_40343"], "questoes_errou": ["SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "GUILHERME FELIPE MARTINS DA SILVA",
+                "matricula": "143968",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 35,
+                "erros": 5,
+                "percentual": 87.5,
+                "tempo": "00:41:37",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 8, "erros": 1, "pct": 88.9, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160"], "questoes_errou": ["SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 12, "erros": 1, "pct": 92.3, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48710", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"], "questoes_errou": ["SAEP_47534"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 12, "erros": 2, "pct": 85.7, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_51353"], "questoes_errou": ["SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 3, "erros": 1, "pct": 75.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342", "SAEP_40343"], "questoes_errou": ["SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "MIGUEL TEIXEIRA DE GOES",
+                "matricula": "281083",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 31,
+                "erros": 9,
+                "percentual": 77.5,
+                "tempo": "00:44:15",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 8, "erros": 1, "pct": 88.9, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160"], "questoes_errou": ["SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 11, "erros": 2, "pct": 84.6, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48710", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718"], "questoes_errou": ["SAEP_47534", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 10, "erros": 4, "pct": 71.4, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010"], "questoes_errou": ["SAEP_51353", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "FERNANDA OLIMPIA DUQUE DE LIMA",
+                "matricula": "288516",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 27,
+                "erros": 13,
+                "percentual": 67.5,
+                "tempo": "00:50:01",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 7, "erros": 2, "pct": 77.8, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159"], "questoes_errou": ["SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 9, "erros": 4, "pct": 69.2, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 9, "erros": 5, "pct": 64.3, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009"], "questoes_errou": ["SAEP_51353", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "YAN FERREIRA DE OLIVEIRA",
+                "matricula": "146992",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 27,
+                "erros": 13,
+                "percentual": 67.5,
+                "tempo": "01:01:26",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 8, "erros": 1, "pct": 88.9, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160"], "questoes_errou": ["SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 7, "erros": 6, "pct": 53.8, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 10, "erros": 4, "pct": 71.4, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010"], "questoes_errou": ["SAEP_51353", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "AYANNE ALVES RODRIGUES",
+                "matricula": "00282331",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 26,
+                "erros": 14,
+                "percentual": 65.0,
+                "tempo": "00:51:53",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 9, "erros": 4, "pct": 69.2, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 11, "erros": 3, "pct": 78.6, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011"], "questoes_errou": ["SAEP_51353", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_40341"], "questoes_errou": ["SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "ARMANDO DE MELO FERREIRA",
+                "matricula": "281478",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 24,
+                "erros": 16,
+                "percentual": 60.0,
+                "tempo": "00:53:25",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 7, "erros": 2, "pct": 77.8, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159"], "questoes_errou": ["SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 8, "erros": 5, "pct": 61.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 7, "erros": 7, "pct": 50.0, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007"], "questoes_errou": ["SAEP_51353", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "AUGUSTO CESAR DE SANTANA LEANDRO",
+                "matricula": "00085634",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 24,
+                "erros": 16,
+                "percentual": 60.0,
+                "tempo": "01:10:59",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 7, "erros": 2, "pct": 77.8, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159"], "questoes_errou": ["SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 8, "erros": 5, "pct": 61.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 7, "erros": 7, "pct": 50.0, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007"], "questoes_errou": ["SAEP_51353", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "LUIZ CLAUDIO MACENA DOS SANTOS",
+                "matricula": "00286624",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 22,
+                "erros": 18,
+                "percentual": 55.0,
+                "tempo": "01:03:02",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 6, "erros": 3, "pct": 66.7, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158"], "questoes_errou": ["SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 8, "erros": 5, "pct": 61.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 6, "erros": 8, "pct": 42.9, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006"], "questoes_errou": ["SAEP_51353", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "MARCIO CAVALCANTE DA SILVA JUNIOR",
+                "matricula": "00228890",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 22,
+                "erros": 18,
+                "percentual": 55.0,
+                "tempo": "00:59:28",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 8, "erros": 5, "pct": 61.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715", "SAEP_48716"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 7, "erros": 7, "pct": 50.0, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007"], "questoes_errou": ["SAEP_51353", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "JOÃO VITOR EMILIANO SILVA FELIX",
+                "matricula": "258003",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 18,
+                "erros": 22,
+                "percentual": 45.0,
+                "tempo": "00:32:29",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 7, "erros": 6, "pct": 53.8, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 5, "erros": 9, "pct": 35.7, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005"], "questoes_errou": ["SAEP_51353", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_40341"], "questoes_errou": ["SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "YASMIM VITTORIA CAVALCANTI",
+                "matricula": "290699",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 17,
+                "erros": 23,
+                "percentual": 42.5,
+                "tempo": "00:47:21",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 5, "erros": 8, "pct": 38.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 5, "erros": 9, "pct": 35.7, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005"], "questoes_errou": ["SAEP_51353", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 2, "erros": 2, "pct": 50.0, "questoes_acertou": ["SAEP_40341", "SAEP_40342"], "questoes_errou": ["SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "JOSÉ PEDRO NASCIMENTO BEZERRA",
+                "matricula": "203640",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 15,
+                "erros": 25,
+                "percentual": 37.5,
+                "tempo": "00:49:21",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 5, "erros": 8, "pct": 38.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 4, "erros": 10, "pct": 28.6, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004"], "questoes_errou": ["SAEP_51353", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_40341"], "questoes_errou": ["SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "ANDREZA TAMIRES DE SANTANA ARAUJO",
+                "matricula": "214364",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 14,
+                "erros": 26,
+                "percentual": 35.0,
+                "tempo": "01:05:24",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 5, "erros": 4, "pct": 55.6, "questoes_acertou": ["SAEP_44645", "SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157"], "questoes_errou": ["SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 5, "erros": 8, "pct": 38.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 3, "erros": 11, "pct": 21.4, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003"], "questoes_errou": ["SAEP_51353", "SAEP_50004", "SAEP_50005", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_40341"], "questoes_errou": ["SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "CLEYBSON ROMUALDO SANTOS DA SILVA",
+                "matricula": "172065",
+                "turma": "TEC.206.029",
+                "total": 40,
+                "acertos": 13,
+                "erros": 27,
+                "percentual": 32.5,
+                "tempo": "00:58:28",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 1, "erros": 8, "pct": 11.1, "questoes_acertou": ["SAEP_44645"], "questoes_errou": ["SAEP_40154", "SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 7, "erros": 6, "pct": 53.8, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713", "SAEP_48714", "SAEP_48715"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 5, "erros": 9, "pct": 35.7, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005"], "questoes_errou": ["SAEP_51353", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 0, "erros": 4, "pct": 0.0, "questoes_acertou": [], "questoes_errou": ["SAEP_40341", "SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            },
+            {
+                "aluno": "ELIAQUIM MESSIAS DE OLIVEIRA",
+                "matricula": "00247562",
+                "turma": "TEC.206.041",
+                "total": 40,
+                "acertos": 13,
+                "erros": 27,
+                "percentual": 32.5,
+                "tempo": "00:43:44",
+                "topicos": {
+                    "Modelagem & Requisitos": { "total": 9, "acertos": 2, "erros": 7, "pct": 22.2, "questoes_acertou": ["SAEP_44645", "SAEP_40154"], "questoes_errou": ["SAEP_40155", "SAEP_40156", "SAEP_40157", "SAEP_40158", "SAEP_40159", "SAEP_40160", "SAEP_40161"] },
+                    "Desenvolvimento IoT": { "total": 13, "acertos": 5, "erros": 8, "pct": 38.5, "questoes_acertou": ["SAEP_44467", "SAEP_67509", "SAEP_48711", "SAEP_48712", "SAEP_48713"], "questoes_errou": ["SAEP_47534", "SAEP_48710", "SAEP_48714", "SAEP_48715", "SAEP_48716", "SAEP_48717", "SAEP_48718", "SAEP_48719"] },
+                    "Lógica de Programação": { "total": 14, "acertos": 5, "erros": 9, "pct": 35.7, "questoes_acertou": ["SAEP_50001", "SAEP_50002", "SAEP_50003", "SAEP_50004", "SAEP_50005"], "questoes_errou": ["SAEP_51353", "SAEP_50006", "SAEP_50007", "SAEP_50008", "SAEP_50009", "SAEP_50010", "SAEP_50011", "SAEP_50012", "SAEP_50014"] },
+                    "Banco de Dados": { "total": 4, "acertos": 1, "erros": 3, "pct": 25.0, "questoes_acertou": ["SAEP_40341"], "questoes_errou": ["SAEP_40342", "SAEP_40343", "SAEP_40344"] }
+                }
+            }
+        ];
+
+        window.onload = function() {
+            renderTable();
+        };
+
+        function renderTable() {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = '';
+
+            rawDataset.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800/40";
+
+                let badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/30";
+                if (student.percentual >= 70.0) badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                else if (student.percentual >= 60.0) badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+
+                const getTopicPill = (pct) => {
+                    let color = "text-rose-400 bg-rose-500/10";
+                    if (pct >= 70) color = "text-emerald-400 bg-emerald-500/10";
+                    else if (pct >= 60) color = "text-amber-400 bg-amber-500/10";
+                    return `<span class="px-2 py-0.5 rounded text-[11px] font-semibold ${color}">${pct.toFixed(0)}%</span>`;
+                };
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-slate-100 text-xs">${student.aluno}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Matrícula: ${student.matricula}</div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <span class="px-2 py-1 rounded-md text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                            ${student.turma}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${badgeClass}">
+                            ${student.percentual.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-center font-mono">
+                        <span class="text-emerald-400 font-bold">${student.acertos}</span> / <span class="text-rose-400 font-bold">${student.erros}</span>
+                    </td>
+                    <td class="py-3 px-3 text-center font-mono text-slate-400 text-[11px]">
+                        ${student.tempo}
+                    </td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Modelagem & Requisitos'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Desenvolvimento IoT'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Lógica de Programação'].pct)}</td>
+                    <td class="py-3 px-2 text-center">${getTopicPill(student.topicos['Banco de Dados'].pct)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="openModal('${student.aluno}')" class="px-3 py-1.5 bg-sky-600/20 hover:bg-sky-600 border border-sky-500/40 text-sky-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 mx-auto">
+                            <i class="fa-solid fa-eye text-[10px]"></i> Detalhes
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal(studentName) {
+            const student = rawDataset.find(s => s.aluno === studentName);
+            if (!student) return;
+
+            const initials = student.aluno.split(' ').map(n => n[0]).slice(0, 2).join('');
+            document.getElementById('modalAvatar').innerText = initials;
+            document.getElementById('modalStudentName').innerText = student.aluno;
+            document.getElementById('modalStudentMeta').innerText = `Turma: ${student.turma} • Matrícula: ${student.matricula} • Tempo: ${student.tempo}`;
+
+            document.getElementById('modalScorePct').innerText = `${student.percentual.toFixed(1)}%`;
+            document.getElementById('modalScoreCounts').innerText = `${student.acertos} acertos / ${student.erros} erros`;
+
+            const classMembers = rawDataset.filter(s => s.turma === student.turma).sort((a, b) => b.percentual - a.percentual);
+            const rank = classMembers.findIndex(s => s.aluno === student.aluno) + 1;
+            document.getElementById('modalClassRank').innerText = `${rank}º lugar de ${classMembers.length}`;
+
+            const container = document.getElementById('modalTopicCards');
+            container.innerHTML = '';
+
+            Object.keys(student.topicos).forEach(topicName => {
+                const top = student.topicos[topicName];
+                
+                let pctColor = "text-rose-400";
+                if (top.pct >= 70) pctColor = "text-emerald-400";
+                else if (top.pct >= 60) pctColor = "text-amber-400";
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2";
+
+                const acertouBadges = top.questoes_acertou.length > 0 
+                    ? top.questoes_acertou.map(q => `<span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-semibold">${q} &#10004;</span>`).join(' ') 
+                    : `<span class="text-slate-500 italic text-[11px]">Nenhuma questão</span>`;
+
+                const errouBadges = top.questoes_errou.length > 0 
+                    ? top.questoes_errou.map(q => `<span class="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-mono text-[10px] font-semibold">${q} &#10008;</span>`).join(' ') 
+                    : `<span class="text-slate-500 italic text-[11px]">Nenhum erro</span>`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-200">${topicName}</span>
+                        <span class="text-xs font-extrabold ${pctColor}">${top.pct.toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="h-full ${top.pct >= 70 ? 'bg-emerald-500' : top.pct >= 60 ? 'bg-amber-500' : 'bg-rose-500'}" style="width: ${top.pct}%"></div>
+                    </div>
+                    <div class="pt-2 text-[11px] space-y-1">
+                        <div><strong class="text-slate-400 block text-[10px] uppercase">Questões Acertadas (${top.acertos}):</strong> ${acertouBadges}</div>
+                        <div class="mt-1"><strong class="text-slate-400 block text-[10px] uppercase">Questões Erradas (${top.erros}):</strong> ${errouBadges}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('studentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
